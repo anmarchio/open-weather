@@ -755,12 +755,25 @@
     }
 
     function renderHourly(data) {
-      const times = data.hourly.time.slice(0, 24);
-      const temps = data.hourly.temperature_2m.slice(0, 24);
-      const labels = times.map(time => formatHour(time));
+      const times = data.hourly.time || [];
+      const temps = data.hourly.temperature_2m || [];
+      const currentTimeIso = data.current?.time;
+
+      let startIndex = 0;
+      if (currentTimeIso) {
+        const targetHour = new Date(currentTimeIso);
+        targetHour.setMinutes(0, 0, 0);
+        const targetIso = targetHour.toISOString().slice(0, 13);
+        const foundIndex = times.findIndex(t => String(t).slice(0, 13) === targetIso);
+        if (foundIndex >= 0) startIndex = foundIndex;
+      }
+
+      const slicedTimes = times.slice(startIndex, startIndex + 24);
+      const slicedTemps = temps.slice(startIndex, startIndex + 24);
+      const labels = slicedTimes.map(time => formatHour(time));
       renderChartFrame(hourlyFrameEl, {
         labels,
-        seriesList: [{ values: temps }],
+        seriesList: [{ values: slicedTemps }],
         minWidth: 1320,
         stepX: 56,
         height: 300
